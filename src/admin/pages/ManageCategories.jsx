@@ -7,7 +7,6 @@ export default function ManageCategories() {
   const [name, setName] = useState("");
   const [subcategories, setSubcategories] = useState("");
 
-  // Fetch categories from backend
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -30,9 +29,30 @@ export default function ManageCategories() {
       });
       setName("");
       setSubcategories("");
-      fetchCategories(); // Refresh list
+      fetchCategories();
     } catch (err) {
       console.error("Error adding category", err);
+    }
+  };
+
+  const handleDeleteCategory = async (id) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/categories/${id}`);
+      fetchCategories();
+    } catch (err) {
+      console.error("Error deleting category", err);
+    }
+  };
+
+  const handleEditCategory = async (id, updatedName, updatedSubcats) => {
+    try {
+      await axios.put(`http://localhost:5000/api/categories/${id}`, {
+        name: updatedName,
+        subcategories: updatedSubcats.split(",").map((s) => s.trim()),
+      });
+      fetchCategories();
+    } catch (err) {
+      console.error("Error updating category", err);
     }
   };
 
@@ -65,18 +85,52 @@ export default function ManageCategories() {
 
         <div>
           <h3 className="text-lg font-semibold mb-2">All Categories</h3>
-          <ul className="space-y-2">
+          <ul className="space-y-4">
             {categories.map((cat) => (
-              <li key={cat._id} className="border p-2 rounded bg-white shadow">
-                <strong>{cat.name}</strong>
-                <p className="text-sm text-gray-500">
-                  Subcategories: {cat.subcategories.join(", ")}
-                </p>
-              </li>
+              <EditableCategory
+                key={cat._id}
+                category={cat}
+                onDelete={handleDeleteCategory}
+                onUpdate={handleEditCategory}
+              />
             ))}
           </ul>
         </div>
       </div>
     </div>
+  );
+}
+
+function EditableCategory({ category, onDelete, onUpdate }) {
+  const [editName, setEditName] = useState(category.name);
+  const [editSubcats, setEditSubcats] = useState(category.subcategories.join(", "));
+
+  return (
+    <li className="border p-4 rounded bg-white shadow space-y-2">
+      <input
+        value={editName}
+        onChange={(e) => setEditName(e.target.value)}
+        className="border p-1 w-full"
+      />
+      <input
+        value={editSubcats}
+        onChange={(e) => setEditSubcats(e.target.value)}
+        className="border p-1 w-full"
+      />
+      <div className="flex gap-2">
+        <button
+          className="bg-green-600 text-white px-3 py-1 rounded"
+          onClick={() => onUpdate(category._id, editName, editSubcats)}
+        >
+          Update
+        </button>
+        <button
+          className="bg-red-600 text-white px-3 py-1 rounded"
+          onClick={() => onDelete(category._id)}
+        >
+          Delete
+        </button>
+      </div>
+    </li>
   );
 }

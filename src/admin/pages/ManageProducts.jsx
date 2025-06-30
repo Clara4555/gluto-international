@@ -5,12 +5,12 @@ import Sidebar from "../components/Sidebar";
 export default function ManageProducts() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
 
   const [formData, setFormData] = useState({
     name: "",
     category: "",
     subcategory: "",
-    image: "",
     availability: 0,
     price: 0,
     description: "",
@@ -44,15 +44,31 @@ export default function ManageProducts() {
     }));
   };
 
+  const handleFileChange = (e) => {
+    setImageFile(e.target.files[0]);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/products", formData);
+      const payload = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        payload.append(key, value);
+      });
+      if (imageFile) {
+        payload.append("image", imageFile);
+      }
+
+      await axios.post("http://localhost:5000/api/products", payload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
       setFormData({
         name: "",
         category: "",
         subcategory: "",
-        image: "",
         availability: 0,
         price: 0,
         description: "",
@@ -63,6 +79,7 @@ export default function ManageProducts() {
         leadTime: "",
         shelfLife: "",
       });
+      setImageFile(null);
       fetchProducts();
     } catch (err) {
       console.error("Error adding product:", err);
@@ -75,7 +92,7 @@ export default function ManageProducts() {
       <div className="p-6 flex-1">
         <h2 className="text-2xl font-bold mb-4">Manage Products</h2>
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 mb-10">
+        <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-4 mb-10" encType="multipart/form-data">
           <input name="name" placeholder="Product Name" value={formData.name} onChange={handleChange} className="border p-2" required />
           <select name="category" value={formData.category} onChange={handleChange} className="border p-2" required>
             <option value="">Select Category</option>
@@ -84,7 +101,15 @@ export default function ManageProducts() {
             ))}
           </select>
           <input name="subcategory" placeholder="Subcategory" value={formData.subcategory} onChange={handleChange} className="border p-2" />
-          <input name="image" placeholder="Image URL" value={formData.image} onChange={handleChange} className="border p-2" />
+          
+          {/* Image file upload */}
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            className="border p-2"
+          />
+
           <input type="number" name="availability" placeholder="Availability % (0-100)" value={formData.availability} onChange={handleChange} className="border p-2" />
           <input type="number" name="price" placeholder="Price" value={formData.price} onChange={handleChange} className="border p-2" />
           <input name="ean" placeholder="EAN/UPC Code" value={formData.ean} onChange={handleChange} className="border p-2" />
@@ -101,7 +126,7 @@ export default function ManageProducts() {
         <div className="grid grid-cols-2 gap-4">
           {products.map((product) => (
             <div key={product._id} className="border p-4 rounded shadow bg-white">
-              <img src={product.image} alt={product.name} className="h-32 object-cover w-full mb-2" />
+              <img src={`http://localhost:5000${product.image}`} alt={product.name} className="h-32 object-cover w-full mb-2" />
               <h4 className="font-bold">{product.name}</h4>
               <p className="text-sm text-gray-600">Category: {product.category}</p>
               <p className="text-sm text-gray-500">Subcategory: {product.subcategory}</p>
